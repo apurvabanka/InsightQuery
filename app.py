@@ -1,6 +1,5 @@
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
 
 from bar_chart import bar_chart_plot
 from data_cleaning import data_cleaning_process
