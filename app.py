@@ -21,7 +21,7 @@ if file:
 
     st.write(df)
 
-    load_data_to_spark(file)
+    # load_data_to_spark(file)
 
     df = data_cleaning_process(df)
 
