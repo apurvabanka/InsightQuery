@@ -10,7 +10,7 @@ st.set_page_config(page_title="Insight Query Interface", page_icon="🤖", layou
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": "You are a helpful assistant."}]
 
-st.title("Insight Query")
+st.title("Insight Query!!!")
 st.write("Ask me anything!")
 
 file = st.file_uploader("Upload your data here")
@@ -35,7 +35,7 @@ if file:
         height = st.slider("Chart Height", min_value=5, max_value=15, value=6)
 
         # Create pie chart
-        fig, ax = plt.subplots(figsize=(width, height))
+        fig, ax = plt.subplots(figsize=(height, width))
         ax.pie(grouped_data, labels=grouped_data.index, autopct='%1.1f%%', startangle=90)
         ax.axis('equal')
         st.pyplot(fig)
