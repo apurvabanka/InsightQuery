@@ -2,8 +2,11 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 
-
+from bar_chart import bar_chart_plot
+from data_cleaning import data_cleaning_process
 from insight_gemini import generate_sql
+from load_spark import load_data_to_spark
+from pie_chart import pie_chart_plot
 
 st.set_page_config(page_title="Insight Query Interface", page_icon="🤖", layout="wide")
 
@@ -19,27 +22,16 @@ if file:
 
     st.write(df)
 
-    group_col = st.selectbox("Select a column to group by", df.columns)
+    load_data_to_spark(file)
 
-    # Select column for values
-    value_col = st.selectbox("Select a column for values", df.columns)
+    df = data_cleaning_process(df)
 
-    if group_col and value_col:
-        # Perform group by and aggregation
-        grouped_data = df.groupby(group_col)[value_col].count()
-        
-        st.write("Grouped Data:")
-        st.dataframe(grouped_data)
+    col1, col2 = st.columns(2)
 
-        width = st.slider("Chart Width", min_value=5, max_value=15, value=8)
-        height = st.slider("Chart Height", min_value=5, max_value=15, value=6)
-
-        # Create pie chart
-        fig, ax = plt.subplots(figsize=(height, width))
-        ax.pie(grouped_data, labels=grouped_data.index, autopct='%1.1f%%', startangle=90)
-        ax.axis('equal')
-        st.pyplot(fig)
-
+    with col1:
+        pie_chart_plot(df)
+    with col2:
+        bar_chart_plot(df)
 
 with st.form("chat_form", clear_on_submit=True):
     user_input = st.text_input("Type your message:", "")
