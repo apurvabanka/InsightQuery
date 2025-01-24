@@ -4,6 +4,7 @@ import streamlit as st
 from bar_chart import bar_chart_plot
 from data_cleaning import data_cleaning_process
 from insight_gemini import generate_sql
+from line_chart import line_chart_pyplot
 from load_spark import load_data_to_spark
 from pie_chart import pie_chart_plot
 
@@ -19,7 +20,7 @@ file = st.file_uploader("Upload your data here")
 if file:
     df = pd.read_csv(file)
 
-    st.write(df)
+    st.write(df.describe())
 
     # load_data_to_spark(file)
 
@@ -31,6 +32,7 @@ if file:
         pie_chart_plot(df)
     with col2:
         bar_chart_plot(df)
+        line_chart_pyplot(df)
 
 with st.form("chat_form", clear_on_submit=True):
     user_input = st.text_input("Type your message:", "")
