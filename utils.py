@@ -19,7 +19,14 @@ def sql_to_df(df, sql):
     pass
 
 def create_vector_embeddings(df):
-    loader = DataFrameLoader(df, page_content_column="SSN")
+    primary_key = None
+    for col in df.columns:
+        if df[col].is_unique:
+            primary_key = col
+            break
+    if primary_key is None:
+        primary_key = df.columns[0]
+    loader = DataFrameLoader(df, page_content_column=primary_key)
     data = loader.load()
 
     vector_db = Chroma.from_documents(
