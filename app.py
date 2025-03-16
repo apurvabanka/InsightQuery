@@ -7,6 +7,9 @@ from insight_gemini import generate_sql
 from line_chart import line_chart_pyplot
 from pie_chart import pie_chart_plot
 from utils import create_vector_embeddings
+import chromadb
+
+chromadb.api.client.SharedSystemClient.clear_system_cache()
 
 st.set_page_config(page_title="Insight Query Interface", page_icon="🤖", layout="wide")
 
@@ -16,7 +19,10 @@ if "messages" not in st.session_state:
 st.title("Insight Query!!!")
 st.write("Ask me anything!")
 
-file = st.file_uploader("Upload your data here")
+file = None
+
+if not file:
+    file = st.file_uploader("Upload your data here")
 
 df = None
 chain = None
