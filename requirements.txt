@@ -110,4 +110,5 @@ uritemplate==4.1.1
 urllib3==2.3.0
 watchdog==6.0.0
 wcwidth==0.2.13
-yarl==1.18.3
+yarl==1.180.3
+langsmith==0.2.16
