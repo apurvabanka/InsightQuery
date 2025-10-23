@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from agent import get_agent
+from agent import get_agent_with_context
+from column_analyzer import ColumnAnalyzer
 from dotenv import load_dotenv
 from code_processor import CodeProcessor
 from callbacks import ThinkingCallbackHandler
@@ -30,6 +31,12 @@ if "agent" not in st.session_state:
 if "code_processor" not in st.session_state:
     st.session_state.code_processor = None
 
+if "column_descriptions" not in st.session_state:
+    st.session_state.column_descriptions = None
+
+if "dataset_context" not in st.session_state:
+    st.session_state.dataset_context = None
+
 st.set_page_config(page_title="CSV Chat Assistant", layout="wide")
 st.title("💬 CSV Chat Assistant")
 
@@ -40,15 +47,39 @@ with st.sidebar:
     
     if uploaded_file:
         if st.session_state.df is None or st.button("🔄 Reload Data"):
-            st.session_state.df = pd.read_csv(uploaded_file)
-            st.session_state.agent = get_agent(st.session_state.df)
-            st.session_state.code_processor = CodeProcessor(st.session_state.df)
-            st.session_state.messages = []  # Clear chat history when new file is loaded
-            st.success("✅ Data loaded successfully!")
+            with st.spinner("📊 Loading and analyzing data..."):
+                # Load the CSV
+                st.session_state.df = pd.read_csv(uploaded_file)
+                
+                # Analyze columns to get descriptions
+                analyzer = ColumnAnalyzer()
+                st.session_state.column_descriptions = analyzer.analyze_columns(st.session_state.df)
+                st.session_state.dataset_context = analyzer.create_dataset_context(
+                    st.session_state.column_descriptions, 
+                    st.session_state.df
+                )
+                
+                # Create agent with column descriptions instead of full dataset
+                st.session_state.agent = get_agent_with_context(
+                    st.session_state.df,
+                    st.session_state.column_descriptions,
+                    st.session_state.dataset_context
+                )
+                
+                st.session_state.code_processor = CodeProcessor(st.session_state.df)
+                st.session_state.messages = []  # Clear chat history when new file is loaded
+                st.success("✅ Data loaded and analyzed successfully!")
         
         if st.session_state.df is not None:
             st.subheader("📊 Data Preview")
             st.dataframe(st.session_state.df.head())
+            
+            # Display column descriptions
+            if st.session_state.column_descriptions:
+                st.subheader("📝 Column Descriptions")
+                for column, description in st.session_state.column_descriptions.items():
+                    with st.expander(f"📋 {column}"):
+                        st.write(description)
             
             if st.button("🗑️ Clear Chat"):
                 st.session_state.messages = []

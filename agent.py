@@ -27,74 +27,90 @@ import json
 #     x_label: Optional[str] = Field(default=None, description="X-axis label (for graph tasks)")
 #     y_label: Optional[str] = Field(default=None, description="Y-axis label (for graph tasks)")
 
-def get_agent(df: pd.DataFrame):
+def get_agent_with_context(df: pd.DataFrame, column_descriptions: dict, dataset_context: str):
+    """
+    Create an agent that uses column descriptions instead of the full dataset
+    
+    Args:
+        df: The pandas DataFrame (for code execution only)
+        column_descriptions: Dictionary of column descriptions
+        dataset_context: Formatted context string about the dataset
+    """
     
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    sample_size = min(10, len(df))  # Only 10 rows max
+    limited_df = df.head(sample_size)
     
-    # Generate schema string
-    # schema = ", ".join(df.columns)
+    # Add basic statistics to the context
+    stats_context = f"""
+    {dataset_context}
     
-    # Create output parser
-    # parser = PydanticOutputParser(pydantic_object=TaskResponse)
+    Sample Data (first {sample_size} rows):
+    {limited_df.to_string()}
     
-    # Define the template string with placeholders
-    # template = """
-    # You are a highly intelligent data scientist.
-    # You are working with a DataFrame named `df`.
+    Basic Statistics:
+    {df.describe().to_string()}
+    """
     
-    # The DataFrame has the following columns: {schema}
+    # Create a custom prompt that includes our column descriptions
+    from langchain.prompts import PromptTemplate
     
-    # You are only allowed to use the tool named "python_repl_ast" to execute Python code.
-    # Do not invent tool names or actions.
+    # Create the prompt template with proper variables
+    template = f"""
+    You are a highly intelligent data scientist working with a dataset.
 
-    # IMPORTANT: You have two types of tasks with strict output formats:
+    {stats_context}
+
+    You have access to a DataFrame named 'df' with the above structure and sample data.
+    You can use the python_repl_ast tool to execute Python code on this data.
+
+    Instructions:
+    - Use the python_repl_ast tool to execute Python code for analysis
+    - For visualizations, use matplotlib or seaborn with proper Streamlit integration
+    - Always include plt.figure(figsize=(10,6)) and plt.tight_layout() for graphs
+    - Use st.pyplot(plt) instead of plt.show() for Streamlit compatibility
+    - Provide clear explanations of your findings
+    - If a column is missing or an error occurs, explain the issue
+    - IMPORTANT: You only have access to sample data, not the full dataset
+
+    Question: {{input}}
+    {{agent_scratchpad}}
+    """
     
-    # 1. INSIGHTS_TASK: When asked for analysis, summary, statistics, or insights:
-    #    - Use the python_repl_ast tool to calculate statistics
-    #    - Return structured output with explanation, code, summary, and recommendations
+    prompt = PromptTemplate(
+        input_variables=["input", "agent_scratchpad"],
+        template=template
+    )
     
-    # 2. GRAPH_TASK: When asked to create plots, charts, or visualizations:
-    #    - Generate Python code using matplotlib or seaborn
-    #    - ALWAYS include these lines in your graph code:
-    #      * plt.figure(figsize=(10,6))  # Set figure size
-    #      * plt.tight_layout()  # Adjust layout
-    #      * st.pyplot(plt)  # Display in Streamlit (NOT plt.show())
-    #    - IMPORTANT: When generating visualizations using matplotlib:
-    #      * Do NOT use `plt.show()`
-    #      * Instead, use `st.pyplot(plt)`
-    #      * This is because you are working in a Streamlit environment
-    #    - Return structured output with explanation, code, graph_type, title, and labels
+    # Create the agent using the LIMITED dataset
+    from langchain_experimental.agents import create_pandas_dataframe_agent
     
-    # Instructions:
-    # - First, think through the steps to solve the problem
-    # - Then, call the tool "python_repl_ast" with the correct Python code
-    # - If a column is missing or an error occurs, explain the issue without retrying
-    # - For graphs, ALWAYS use: plt.figure(figsize=(10,6)), plt.tight_layout(), and st.pyplot(plt)
-    # - For insights, provide clear explanations with supporting data
-    
-    # IMPORTANT: You MUST return your response in the following JSON format:
-    # {format_instructions}
-    
-    # Question: {input}
-    # """
-    
-    # Create the prompt with expected input variables
-    # custom_prompt = PromptTemplate(
-    #     input_variables=["schema", "input", "format_instructions"],
-    #     template=template
-    # )
-    
-    # Pass the prompt as a formatted string by setting partial_variables
-    return create_pandas_dataframe_agent(
+    agent = create_pandas_dataframe_agent(
         llm=llm,
-        df=df,  # Use the limited dataframe
-        # prompt=custom_prompt.partial(schema=schema, format_instructions=parser.get_format_instructions()),  # this fills the schema
+        df=limited_df,
+        prompt=prompt,
         verbose=True,
         allow_dangerous_code=True,
         max_iterations=15,
         max_execution_time=120,
-        agent_type="openai-tools"  # Use the correct agent type
+        agent_type="openai-tools"
     )
+    
+    return agent
+
+def get_agent(df: pd.DataFrame):
+    """
+    Legacy function - kept for backward compatibility
+    Now creates an agent that uses column descriptions
+    """
+    from column_analyzer import ColumnAnalyzer
+    
+    # Analyze columns to get descriptions
+    analyzer = ColumnAnalyzer()
+    column_descriptions = analyzer.analyze_columns(df)
+    dataset_context = analyzer.create_dataset_context(column_descriptions, df)
+    
+    return get_agent_with_context(df, column_descriptions, dataset_context)
 
 # def parse_agent_response(response: str) -> TaskResponse:
 #     """
