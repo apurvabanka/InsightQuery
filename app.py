@@ -11,6 +11,7 @@ import ast
 import matplotlib
 matplotlib.use('Agg')  # Set the backend to non-interactive
 import matplotlib.pyplot as plt
+plt.ioff()  # Turn off interactive mode
 import seaborn as sns
 from io import StringIO
 
@@ -117,8 +118,11 @@ if st.session_state.df is not None:
                 # Display the complete agent response
                 message_placeholder.markdown("**🤖 Agent Response:**")
                 message_placeholder.markdown(response)
-                message_placeholder.pyplot(plt.gcf())  # Display the plot
-                plt.clf()  # Clean up for next round
+                
+                # Only display plot if there's actually a figure
+                if plt.get_fignums():
+                    message_placeholder.pyplot(plt.gcf())  # Display the plot
+                    plt.clf()  # Clean up for next round
                 
                 # Execute code if present (extract code from response)
                 code_result = None
@@ -188,7 +192,7 @@ if st.session_state.df is not None:
                             st.success("📊 Graph generated successfully!")
                             # Display the graph immediately
                             st.pyplot(fig)
-                            # Don't close the figure here, let it be displayed
+                            plt.close(fig)  # Close the figure after displaying
                         else:
                             st.success("✅ Code executed successfully!")
                             if is_graph:
