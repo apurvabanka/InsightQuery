@@ -4,7 +4,11 @@ This API provides endpoints for uploading CSV files and managing them by session
 
 ## Demo
 
-https://github.com/user-attachments/assets/demo.mov
+<video width="600" controls>
+    <source src="demo.mov" type="video/mov">
+    Your browser does not support the video tag.
+</video>
+
 
 ## Features
 
