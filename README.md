@@ -2,6 +2,10 @@
 
 This API provides endpoints for uploading CSV files and managing them by session ID.
 
+## Demo
+
+https://github.com/user-attachments/assets/demo.mov
+
 ## Features
 
 - Create CSV sessions with unique session IDs
